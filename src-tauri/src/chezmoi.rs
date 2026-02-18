@@ -210,7 +210,7 @@ pub fn chezmoi_diff_git(source_path: String) -> Result<CommandOutput, String> {
 
 #[tauri::command]
 pub fn chezmoi_apply(path: Option<String>) -> Result<CommandOutput, String> {
-    let mut args = vec!["apply"];
+    let mut args = vec!["apply", "--force"];
     let path_owned;
     if let Some(ref p) = path {
         path_owned = expand_home(p);
