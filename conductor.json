@@ -1,0 +1,7 @@
+{
+    "scripts": {
+        "setup": "pnpm install",
+        "run": "pnpm run tauri dev",
+        "archive": "rm -rf node_modules"
+    }
+}
