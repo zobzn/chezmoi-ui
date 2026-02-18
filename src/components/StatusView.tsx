@@ -117,6 +117,7 @@ function DiffViewer({
     drawFileList: false,
     matching: "none",
     outputFormat: side ? "side-by-side" : "line-by-line",
+    colorScheme: "dark",
   });
 
   return (
