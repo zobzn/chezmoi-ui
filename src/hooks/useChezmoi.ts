@@ -13,6 +13,7 @@ export function useChezmoi() {
   const data = () => invoke<CommandOutput>("chezmoi_data");
   const doctor = () => invoke<CommandOutput>("chezmoi_doctor");
   const sourcePath = (path?: string) => invoke<CommandOutput>("chezmoi_source_path", { path });
+  const cat = (path: string) => invoke<CommandOutput>("chezmoi_cat", { path });
 
-  return { fileStates, diff, diffGit, apply, add, forget, managed, git, data, doctor, sourcePath };
+  return { fileStates, diff, diffGit, apply, add, forget, managed, git, data, doctor, sourcePath, cat };
 }

@@ -143,6 +143,37 @@ function DiffViewer({
   );
 }
 
+// ── content viewer ────────────────────────────────────────────────────────────
+
+function ContentViewer({
+  title,
+  content,
+  actions,
+  onClose,
+}: {
+  title: string;
+  content: string;
+  actions: DiffAction[];
+  onClose: () => void;
+}) {
+  return (
+    <div className="diff-viewer">
+      <div className="diff-header">
+        <button className="btn-ghost" onClick={onClose}>← Back</button>
+        <span className="diff-title dim">{title}</span>
+        <div className="diff-actions">
+          {actions.map((a) => (
+            <button key={a.label} className={a.className} onClick={a.onClick}>{a.label}</button>
+          ))}
+        </div>
+      </div>
+      <div className="content-body">
+        <pre className="content-pre">{content}</pre>
+      </div>
+    </div>
+  );
+}
+
 // ── commit dialog ─────────────────────────────────────────────────────────────
 
 function CommitDialog({
@@ -189,10 +220,12 @@ function FileRow({
   file,
   onDiffLocal,
   onDiffGit,
+  onView,
 }: {
   file: FileState;
   onDiffLocal: () => void;
   onDiffGit: () => void;
+  onView: () => void;
 }) {
   const hasLocal = file.local_change !== " ";
   const hasUnstaged = file.git_worktree !== " " && file.git_worktree !== "?";
@@ -219,6 +252,9 @@ function FileRow({
             <button className="btn-sm" onClick={onDiffGit}>git changes</button>
           </Tooltip>
         )}
+        <Tooltip text={`View source content of ~/${file.path}`}>
+          <button className="btn-sm" onClick={onView}>view</button>
+        </Tooltip>
       </div>
     </div>
   );
@@ -228,10 +264,11 @@ function FileRow({
 
 type DiffMode =
   | { kind: "local"; path: string }
-  | { kind: "git"; sourceName: string; path: string };
+  | { kind: "git"; sourceName: string; path: string }
+  | { kind: "content"; path: string };
 
 export function StatusView() {
-  const { fileStates, diff, diffGit, apply, add, forget, git, sourcePath } = useChezmoi();
+  const { fileStates, diff, diffGit, apply, add, forget, git, sourcePath, cat } = useChezmoi();
   const [files, setFiles] = useState<FileState[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -264,6 +301,12 @@ export function StatusView() {
     const out = await diff(path);
     setDiffContent(out.stdout || out.stderr || "(no diff)");
     setDiffMode({ kind: "local", path });
+  };
+
+  const handleViewContent = async (path: string) => {
+    const out = await cat(path);
+    setDiffContent(out.stdout || out.stderr || "(empty)");
+    setDiffMode({ kind: "content", path });
   };
 
   const handleDiffGit = async (path: string) => {
@@ -331,6 +374,26 @@ export function StatusView() {
 
   if (diffMode) {
     const file = files.find((f) => f.path === diffMode.path);
+
+    if (diffMode.kind === "content") {
+      const actions: DiffAction[] = [];
+      if (file && isClean(file)) {
+        actions.push({
+          label: "untrack",
+          className: "btn-secondary btn-danger",
+          onClick: () => { handleForget(diffMode.path); setDiffMode(null); },
+        });
+      }
+      return (
+        <ContentViewer
+          title={diffMode.path}
+          content={diffContent}
+          actions={actions}
+          onClose={() => setDiffMode(null)}
+        />
+      );
+    }
+
     const actions: DiffAction[] = [];
 
     if (diffMode.kind === "local") {
@@ -475,6 +538,7 @@ export function StatusView() {
           file={f}
           onDiffLocal={() => handleDiffLocal(f.path)}
           onDiffGit={() => handleDiffGit(f.path)}
+          onView={() => handleViewContent(f.path)}
         />
       ))}
 
