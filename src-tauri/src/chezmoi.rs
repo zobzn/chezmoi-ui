@@ -1,5 +1,5 @@
-use std::process::Command;
 use serde::{Deserialize, Serialize};
+use std::process::Command;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CommandOutput {
@@ -18,7 +18,7 @@ pub struct FileState {
     pub local_change: String,
     /// git status of the source file: " " | "?" | "M" | "A" | "D"
     /// '?' = untracked, 'M' = modified unstaged, 'A' = staged, ' ' = clean
-    pub git_index: String,   // staged (index)
+    pub git_index: String, // staged (index)
     pub git_worktree: String, // unstaged (worktree)
     /// commits ahead of remote (not pushed)
     pub commits_ahead: u32,
@@ -92,11 +92,7 @@ pub fn chezmoi_file_states() -> Result<Vec<FileState>, String> {
             let worktree = chars[1].to_string();
             let filename = line[3..].to_string();
             // filename is the source name (e.g. "dot_bashrc"), extract base
-            let base = filename
-                .rsplit('/')
-                .next()
-                .unwrap_or(&filename)
-                .to_string();
+            let base = filename.rsplit('/').next().unwrap_or(&filename).to_string();
             git_states.insert(base, (index.clone(), worktree.clone()));
             // also store full path key
             git_states.insert(filename.clone(), (index, worktree));
@@ -105,15 +101,11 @@ pub fn chezmoi_file_states() -> Result<Vec<FileState>, String> {
 
     // 4. git rev-list ahead/behind
     let (commits_ahead, commits_behind) = {
-        let rev_out = run_chezmoi_git(&[
-            "rev-list",
-            "--left-right",
-            "--count",
-            "HEAD...@{upstream}",
-        ]);
+        let rev_out =
+            run_chezmoi_git(&["rev-list", "--left-right", "--count", "HEAD...@{upstream}"]);
         match rev_out {
             Ok(o) if o.success => {
-                let parts: Vec<&str> = o.stdout.trim().split_whitespace().collect();
+                let parts: Vec<&str> = o.stdout.split_whitespace().collect();
                 let ahead = parts.first().and_then(|s| s.parse().ok()).unwrap_or(0u32);
                 let behind = parts.get(1).and_then(|s| s.parse().ok()).unwrap_or(0u32);
                 (ahead, behind)
