@@ -54,7 +54,7 @@ fn source_dir() -> Result<String, String> {
 #[tauri::command]
 pub fn chezmoi_file_states() -> Result<Vec<FileState>, String> {
     // 1. chezmoi managed — all tracked paths (relative to ~)
-    let managed_out = run_chezmoi(&["managed"])?;
+    let managed_out = run_chezmoi(&["managed", "--include=files"])?;
     let managed: Vec<String> = managed_out
         .stdout
         .lines()
@@ -259,4 +259,9 @@ pub fn chezmoi_data() -> Result<CommandOutput, String> {
 #[tauri::command]
 pub fn chezmoi_doctor() -> Result<CommandOutput, String> {
     run_chezmoi(&["doctor"])
+}
+
+#[tauri::command]
+pub fn chezmoi_cat(path: String) -> Result<CommandOutput, String> {
+    run_chezmoi(&["cat", &expand_home(&path)])
 }
