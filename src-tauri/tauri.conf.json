@@ -23,13 +23,31 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["dmg", "app", "deb", "appimage", "nsis"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "category": "DeveloperTool",
+    "shortDescription": "GUI for chezmoi dotfiles manager",
+    "longDescription": "A graphical interface for chezmoi, the dotfiles manager. Browse, diff, and apply your dotfile changes with ease.",
+    "copyright": "© 2025 chezmoi-ui contributors",
+    "linux": {
+      "deb": {
+        "depends": []
+      },
+      "appimage": {
+        "bundleMediaFramework": true
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.15"
+    },
+    "windows": {
+      "nsis": {}
+    }
   }
 }

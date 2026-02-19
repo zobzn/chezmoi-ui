@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useChezmoi } from "../hooks/useChezmoi";
 import { FileState } from "../types";
 import { html as diff2html } from "diff2html";
+import { ColorSchemeType } from "diff2html/lib/types";
 import "diff2html/bundles/css/diff2html.min.css";
 
 // ── tooltip ───────────────────────────────────────────────────────────────────
@@ -117,7 +118,7 @@ function DiffViewer({
     drawFileList: false,
     matching: "none",
     outputFormat: side ? "side-by-side" : "line-by-line",
-    colorScheme: "dark",
+    colorScheme: ColorSchemeType.DARK,
   });
 
   return (
