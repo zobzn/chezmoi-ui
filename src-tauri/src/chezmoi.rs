@@ -204,11 +204,11 @@ fn reverse_unified_diff(diff: &str) -> String {
         } else if line.starts_with("@@ ") {
             result.push(reverse_hunk_header(line));
             i += 1;
-        } else if line.starts_with('-') {
-            result.push(format!("+{}", &line[1..]));
+        } else if let Some(stripped) = line.strip_prefix('-') {
+            result.push(format!("+{}", stripped));
             i += 1;
-        } else if line.starts_with('+') {
-            result.push(format!("-{}", &line[1..]));
+        } else if let Some(stripped) = line.strip_prefix('+') {
+            result.push(format!("-{}", stripped));
             i += 1;
         } else {
             result.push(line.to_string());
