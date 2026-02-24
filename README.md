@@ -26,6 +26,24 @@ Built with Tauri 2 + React + TypeScript.
 - Runs `chezmoi doctor` and shows results in a table
 - Status badges: ok, warning, error
 
+## Installation
+
+Download the latest release for your platform from the [Releases](https://github.com/zobzn/chezmoi-ui/releases) page.
+
+### macOS: bypassing the "unidentified developer" warning
+
+The app is not signed with an Apple Developer certificate, so macOS will block it on first launch. To fix:
+
+**Option 1 — right-click:**
+Right-click (or Control+click) the app → **Open** → click **Open** in the dialog.
+
+**Option 2 — terminal:**
+```bash
+xattr -cr /Applications/chezmoi-ui.app
+```
+
+You only need to do this once.
+
 ## Requirements
 
 - [chezmoi](https://www.chezmoi.io/install/) installed and on `PATH`
