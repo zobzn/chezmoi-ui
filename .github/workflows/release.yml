@@ -76,7 +76,8 @@ jobs:
             libwebkit2gtk-4.1-dev \
             libappindicator3-dev \
             librsvg2-dev \
-            patchelf
+            patchelf \
+            xdg-utils
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -120,7 +121,7 @@ jobs:
           releaseDraft: true
           prerelease: false
           updaterJsonPreferNsis: true
-          releaseAssetNamePattern: 'chezmoi-ui-[platform]-[arch][ext]'
+          assetNamePattern: 'chezmoi-ui-[platform]-[arch][ext]'
           args: --target ${{ matrix.target }}
 
   publish-release:
