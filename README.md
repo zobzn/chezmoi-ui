@@ -51,17 +51,22 @@ You only need to do this once.
 
 ## Releasing a new version
 
-1. Bump the version in `src-tauri/Cargo.toml`
-2. Commit and push a tag:
+1. Make sure all changes are merged to `main`.
 
-```bash
-git add src-tauri/Cargo.toml
-git commit -m "chore: bump version to 0.2.0"
-git tag v0.2.0
-git push origin main --tags
-```
+2. Edit `src-tauri/Cargo.toml` — bump the `version` field:
+   ```toml
+   version = "0.2.0"
+   ```
 
-GitHub Actions will build binaries for all platforms and publish a release automatically.
+3. Commit, tag, and push:
+   ```bash
+   git add src-tauri/Cargo.toml
+   git commit -m "chore: bump version to 0.2.0"
+   git tag v0.2.0
+   git push origin main --tags
+   ```
+
+GitHub Actions will build binaries for all platforms and publish a GitHub Release automatically (~20 min).
 
 ## Development
 
