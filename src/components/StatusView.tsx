@@ -61,23 +61,22 @@ function Tooltip({ text, children }: { text: string; children: React.ReactNode }
 
 // ── badge helpers ────────────────────────────────────────────────────────────
 
-function LocalBadge({ ch }: { ch: string }) {
-  if (ch === " ") return null;
-  const label = ch === "A" ? "new" : ch === "D" ? "deleted" : ch === "M" ? "modified" : ch === "R" ? "renamed" : ch;
-  return <span className="badge badge-local">● {label}</span>;
-}
+function StatusPills({ file }: { file: FileState }) {
+  const localChanged = file.local_change !== " ";
+  const repoChanged =
+    file.git_index !== " " ||
+    (file.git_worktree !== " " && file.git_worktree !== "?");
 
-function GitBadge({ index, worktree }: { index: string; worktree: string }) {
-  const badges: React.ReactNode[] = [];
-  if (index !== " ") {
-    const label = index === "A" ? "staged:new" : index === "M" ? "staged:mod" : index === "D" ? "staged:del" : `staged:${index}`;
-    badges.push(<span key="idx" className="badge badge-staged">~ {label}</span>);
-  }
-  if (worktree !== " " && worktree !== "?") {
-    const label = worktree === "M" ? "unstaged" : worktree === "D" ? "unstaged:del" : `unstaged:${worktree}`;
-    badges.push(<span key="wt" className="badge badge-unstaged">~ {label}</span>);
-  }
-  return <>{badges}</>;
+  return (
+    <div className="status-pills">
+      <span className={`status-pill ${localChanged ? "status-pill-active" : "status-pill-clean"}`}>
+        local
+      </span>
+      <span className={`status-pill ${repoChanged ? "status-pill-active" : "status-pill-clean"}`}>
+        repo
+      </span>
+    </div>
+  );
 }
 
 function SyncBadges({ ahead, behind }: { ahead: number; behind: number }) {
@@ -103,14 +102,18 @@ type DiffAction = { label: string; className: string; onClick: () => void };
 
 function DiffViewer({
   title,
+  subtitle,
   content,
   actions,
   onClose,
+  warning,
 }: {
   title: string;
+  subtitle?: string;
   content: string;
   actions: DiffAction[];
   onClose: () => void;
+  warning?: string;
 }) {
   const [side, setSide] = useState(true);
 
@@ -126,6 +129,8 @@ function DiffViewer({
       <div className="diff-header">
         <button className="btn-ghost" onClick={onClose}>← Back</button>
         <span className="diff-title dim">{title}</span>
+        {subtitle && <span className="diff-subtitle">{subtitle}</span>}
+        {warning && <span className="diff-warning">{warning}</span>}
         <div className="diff-mode-toggle">
           <button className={`btn-sm ${side ? "btn-sm-active" : ""}`} onClick={() => setSide(true)}>side by side</button>
           <button className={`btn-sm ${!side ? "btn-sm-active" : ""}`} onClick={() => setSide(false)}>unified</button>
@@ -221,15 +226,18 @@ function FileRow({
   file,
   onDiffLocal,
   onDiffGit,
+  onDiffGitStaged,
   onView,
 }: {
   file: FileState;
   onDiffLocal: () => void;
   onDiffGit: () => void;
+  onDiffGitStaged: () => void;
   onView: () => void;
 }) {
   const hasLocal = file.local_change !== " ";
   const hasUnstaged = file.git_worktree !== " " && file.git_worktree !== "?";
+  const hasStaged = file.git_index !== " " && file.git_index !== "?";
   const clean = isClean(file);
 
   return (
@@ -237,23 +245,27 @@ function FileRow({
       <span className="file-path">{file.path}</span>
 
       <div className="file-badges">
-        <LocalBadge ch={file.local_change} />
-        <GitBadge index={file.git_index} worktree={file.git_worktree} />
+        <StatusPills file={file} />
         <SyncBadges ahead={file.commits_ahead} behind={file.commits_behind} />
       </div>
 
       <div className="row-actions">
         {hasLocal && (
-          <Tooltip text={`What changed in ~/${file.path}`}>
-            <button className="btn-sm" onClick={onDiffLocal}>changes</button>
+          <Tooltip text={`~/${file.path} differs from the dotfiles repo`}>
+            <button className="btn-sm" onClick={onDiffLocal}>~/changed</button>
           </Tooltip>
         )}
         {hasUnstaged && (
-          <Tooltip text={`Uncommitted changes to ~/${file.path} in dotfiles repo`}>
-            <button className="btn-sm" onClick={onDiffGit}>git changes</button>
+          <Tooltip text={`Dotfiles repo has uncommitted edits to ${file.path}`}>
+            <button className="btn-sm" onClick={onDiffGit}>dotfiles</button>
           </Tooltip>
         )}
-        <Tooltip text={`View source content of ~/${file.path}`}>
+        {hasStaged && (
+          <Tooltip text={`Changes staged in the dotfiles repo, ready to commit`}>
+            <button className="btn-sm" onClick={onDiffGitStaged}>staged</button>
+          </Tooltip>
+        )}
+        <Tooltip text={`View the dotfiles repo version of ${file.path}`}>
           <button className="btn-sm" onClick={onView}>view</button>
         </Tooltip>
       </div>
@@ -266,10 +278,11 @@ function FileRow({
 type DiffMode =
   | { kind: "local"; path: string }
   | { kind: "git"; sourceName: string; path: string }
+  | { kind: "git-staged"; sourceName: string; path: string }
   | { kind: "content"; path: string };
 
 export function StatusView() {
-  const { fileStates, diff, diffGit, apply, add, forget, git, sourcePath, cat } = useChezmoi();
+  const { fileStates, diff, diffGit, diffGitCached, apply, add, forget, git, sourcePath, cat } = useChezmoi();
   const [files, setFiles] = useState<FileState[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -316,6 +329,23 @@ export function StatusView() {
     const out = await diffGit(src);
     setDiffContent(out.stdout || out.stderr || "(no diff)");
     setDiffMode({ kind: "git", sourceName: src, path });
+  };
+
+  const handleDiffGitStaged = async (path: string) => {
+    const srcOut = await sourcePath(path);
+    const src = srcOut.stdout.trim();
+    const out = await diffGitCached(src);
+    setDiffContent(out.stdout || out.stderr || "(no diff)");
+    setDiffMode({ kind: "git-staged", sourceName: src, path });
+  };
+
+  const handleUnstage = async (path: string) => {
+    const srcOut = await sourcePath(path);
+    const src = srcOut.stdout.trim();
+    const out = await git(["restore", "--staged", src]);
+    notify(out.success ? `Unstaged ${path}` : out.stderr, out.success);
+    setDiffMode(null);
+    load();
   };
 
   const handleAdd = async (path: string) => {
@@ -387,7 +417,7 @@ export function StatusView() {
       }
       return (
         <ContentViewer
-          title={diffMode.path}
+          title={`dotfiles: ${diffMode.path}`}
           content={diffContent}
           actions={actions}
           onClose={() => setDiffMode(null)}
@@ -413,11 +443,19 @@ export function StatusView() {
     if (diffMode.kind === "git") {
       if (file && file.git_worktree !== " " && file.git_worktree !== "?") {
         actions.push({
-          label: "mark",
+          label: "queue commit",
           className: "btn-secondary btn-blue",
           onClick: () => handleStage(diffMode.path),
         });
       }
+    }
+
+    if (diffMode.kind === "git-staged") {
+      actions.push({
+        label: "unstage",
+        className: "btn-secondary btn-orange",
+        onClick: () => handleUnstage(diffMode.path),
+      });
     }
 
     if (file && file.git_index !== " ") {
@@ -452,13 +490,27 @@ export function StatusView() {
       });
     }
 
+    const subtitle =
+      diffMode.kind === "local" ? `~/${diffMode.path}  vs  dotfiles` :
+      diffMode.kind === "git" ? "dotfiles  vs  committed" :
+      diffMode.kind === "git-staged" ? "staged  ·  ready to commit" :
+      undefined;
+
+    const conflictWarning =
+      diffMode.kind === "local" && file &&
+      file.git_worktree !== " " && file.git_worktree !== "?"
+        ? "⚠ dotfiles also has uncommitted changes"
+        : undefined;
+
     return (
       <>
         <DiffViewer
           title={diffMode.path}
+          subtitle={subtitle}
           content={diffContent}
           actions={actions}
           onClose={() => setDiffMode(null)}
+          warning={conflictWarning}
         />
         {showCommitDialog && (
           <CommitDialog
@@ -539,6 +591,7 @@ export function StatusView() {
           file={f}
           onDiffLocal={() => handleDiffLocal(f.path)}
           onDiffGit={() => handleDiffGit(f.path)}
+          onDiffGitStaged={() => handleDiffGitStaged(f.path)}
           onView={() => handleViewContent(f.path)}
         />
       ))}

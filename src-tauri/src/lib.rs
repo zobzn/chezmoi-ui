@@ -2,8 +2,8 @@ mod chezmoi;
 
 use chezmoi::{
     chezmoi_add, chezmoi_apply, chezmoi_cat, chezmoi_data, chezmoi_diff, chezmoi_diff_git,
-    chezmoi_doctor, chezmoi_file_states, chezmoi_forget, chezmoi_git, chezmoi_managed,
-    chezmoi_source_path,
+    chezmoi_diff_git_cached, chezmoi_doctor, chezmoi_file_states, chezmoi_forget, chezmoi_git,
+    chezmoi_managed, chezmoi_source_path,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -14,6 +14,7 @@ pub fn run() {
             chezmoi_file_states,
             chezmoi_diff,
             chezmoi_diff_git,
+            chezmoi_diff_git_cached,
             chezmoi_apply,
             chezmoi_add,
             chezmoi_forget,

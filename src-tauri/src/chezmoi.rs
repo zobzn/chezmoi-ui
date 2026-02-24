@@ -184,6 +184,68 @@ fn path_to_source_name(path: &str) -> String {
     }
 }
 
+/// Reverse a unified diff so it reads source→local instead of local→source.
+/// chezmoi diff shows "what apply would do" (local→source), but users expect
+/// to see "what they changed" (source→local).
+fn reverse_unified_diff(diff: &str) -> String {
+    if diff.is_empty() {
+        return diff.to_string();
+    }
+    let lines: Vec<&str> = diff.lines().collect();
+    let mut result: Vec<String> = Vec::with_capacity(lines.len());
+    let mut i = 0;
+    while i < lines.len() {
+        let line = lines[i];
+        if line.starts_with("--- ") && i + 1 < lines.len() && lines[i + 1].starts_with("+++ ") {
+            // Swap file headers
+            result.push(format!("--- {}", &lines[i + 1][4..]));
+            result.push(format!("+++ {}", &line[4..]));
+            i += 2;
+        } else if line.starts_with("@@ ") {
+            result.push(reverse_hunk_header(line));
+            i += 1;
+        } else if line.starts_with('-') {
+            result.push(format!("+{}", &line[1..]));
+            i += 1;
+        } else if line.starts_with('+') {
+            result.push(format!("-{}", &line[1..]));
+            i += 1;
+        } else {
+            result.push(line.to_string());
+            i += 1;
+        }
+    }
+    let mut out = result.join("\n");
+    if diff.ends_with('\n') {
+        out.push('\n');
+    }
+    out
+}
+
+/// Swap the old/new line ranges in a unified diff hunk header.
+/// e.g. "@@ -13,5 +13,10 @@ ctx" → "@@ -13,10 +13,5 @@ ctx"
+fn reverse_hunk_header(header: &str) -> String {
+    if !header.starts_with("@@ ") {
+        return header.to_string();
+    }
+    let inner = &header[3..]; // skip "@@ "
+    if let Some(close_pos) = inner.find(" @@") {
+        let ranges = &inner[..close_pos]; // e.g. "-13,5 +13,10"
+        let context = &inner[close_pos + 3..]; // e.g. "" or " some context"
+        let parts: Vec<&str> = ranges.splitn(2, ' ').collect();
+        if parts.len() == 2 && parts[0].starts_with('-') && parts[1].starts_with('+') {
+            let reversed_old = format!("-{}", &parts[1][1..]);
+            let reversed_new = format!("+{}", &parts[0][1..]);
+            return if context.is_empty() {
+                format!("@@ {} {} @@", reversed_old, reversed_new)
+            } else {
+                format!("@@ {} {} @@{}", reversed_old, reversed_new, context)
+            };
+        }
+    }
+    header.to_string()
+}
+
 #[tauri::command]
 pub fn chezmoi_diff(path: Option<String>) -> Result<CommandOutput, String> {
     let mut args = vec!["diff"];
@@ -192,12 +254,19 @@ pub fn chezmoi_diff(path: Option<String>) -> Result<CommandOutput, String> {
         path_owned = expand_home(p);
         args.push(&path_owned);
     }
-    run_chezmoi(&args)
+    let mut out = run_chezmoi(&args)?;
+    out.stdout = reverse_unified_diff(&out.stdout);
+    Ok(out)
 }
 
 #[tauri::command]
 pub fn chezmoi_diff_git(source_path: String) -> Result<CommandOutput, String> {
     run_chezmoi_git(&["diff", &source_path])
+}
+
+#[tauri::command]
+pub fn chezmoi_diff_git_cached(source_path: String) -> Result<CommandOutput, String> {
+    run_chezmoi_git(&["diff", "--cached", &source_path])
 }
 
 #[tauri::command]
