@@ -5,6 +5,7 @@ export function useChezmoi() {
   const fileStates = () => invoke<FileState[]>("chezmoi_file_states");
   const diff = (path?: string) => invoke<CommandOutput>("chezmoi_diff", { path });
   const diffGit = (sourcePath: string) => invoke<CommandOutput>("chezmoi_diff_git", { sourcePath });
+  const diffGitCached = (sourcePath: string) => invoke<CommandOutput>("chezmoi_diff_git_cached", { sourcePath });
   const apply = (path?: string) => invoke<CommandOutput>("chezmoi_apply", { path });
   const add = (path: string) => invoke<CommandOutput>("chezmoi_add", { path });
   const forget = (path: string) => invoke<CommandOutput>("chezmoi_forget", { path });
@@ -15,5 +16,5 @@ export function useChezmoi() {
   const sourcePath = (path?: string) => invoke<CommandOutput>("chezmoi_source_path", { path });
   const cat = (path: string) => invoke<CommandOutput>("chezmoi_cat", { path });
 
-  return { fileStates, diff, diffGit, apply, add, forget, managed, git, data, doctor, sourcePath, cat };
+  return { fileStates, diff, diffGit, diffGitCached, apply, add, forget, managed, git, data, doctor, sourcePath, cat };
 }
