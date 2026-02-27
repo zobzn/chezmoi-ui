@@ -28,6 +28,25 @@ Built with Tauri 2 + React + TypeScript.
 
 ## Installation
 
+### macOS — Homebrew (recommended)
+
+chezmoi-ui requires the `chezmoi` CLI to be installed separately:
+
+```bash
+brew install chezmoi
+brew install --cask zobzn/tap/chezmoi-ui
+```
+
+Or tap first:
+
+```bash
+brew install chezmoi
+brew tap zobzn/tap
+brew install --cask chezmoi-ui
+```
+
+### Other platforms
+
 Download the latest release for your platform from the [Releases](https://github.com/zobzn/chezmoi-ui/releases) page.
 
 ### macOS: bypassing the "unidentified developer" warning
