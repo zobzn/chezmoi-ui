@@ -26,8 +26,24 @@ pub struct FileState {
     pub commits_behind: u32,
 }
 
+fn find_chezmoi() -> String {
+    // macOS GUI apps get a minimal PATH that doesn't include Homebrew paths.
+    // Check common install locations before falling back to PATH lookup.
+    let candidates = [
+        "/opt/homebrew/bin/chezmoi", // Apple Silicon Homebrew
+        "/usr/local/bin/chezmoi",    // Intel Homebrew
+        "/usr/bin/chezmoi",
+    ];
+    for path in &candidates {
+        if std::path::Path::new(path).exists() {
+            return path.to_string();
+        }
+    }
+    "chezmoi".to_string()
+}
+
 fn run_chezmoi(args: &[&str]) -> Result<CommandOutput, String> {
-    let output = Command::new("chezmoi")
+    let output = Command::new(find_chezmoi())
         .args(args)
         .output()
         .map_err(|e| format!("Failed to run chezmoi: {}", e))?;
