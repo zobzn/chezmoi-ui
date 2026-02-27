@@ -1,6 +1,6 @@
 [package]
 name = "chezmoi-ui"
-version = "0.0.1"
+version = "0.0.2"
 description = "GUI for chezmoi dotfiles manager"
 authors = []
 edition = "2021"
