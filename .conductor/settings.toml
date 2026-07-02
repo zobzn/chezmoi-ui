@@ -1,0 +1,10 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+[scripts]
+setup = "pnpm install"
+archive = "rm -rf node_modules"
+
+[scripts.run.tauri]
+command = "pnpm run tauri dev"
+default = true
+icon = "app-window"
